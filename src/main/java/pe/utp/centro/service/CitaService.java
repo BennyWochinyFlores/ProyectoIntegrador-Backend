@@ -33,11 +33,20 @@ public class CitaService {
      * (no cancelada) que se solape con la duración de la especialidad.
      */
     public Cita agendar(Nino nino, Terapeuta terapeuta, Especialidad especialidad, LocalDateTime fechaHora) {
-        return agendar(nino, terapeuta, especialidad, fechaHora, null);
+        validarDisponibilidad(nino, terapeuta, especialidad, fechaHora, null);
+
+        Cita cita = new Cita();
+        cita.setNino(nino);
+        cita.setTerapeuta(terapeuta);
+        cita.setEspecialidad(especialidad);
+        cita.setFechaHora(fechaHora);
+        cita.setEstado(Cita.Estado.PENDIENTE);
+        return citaRepository.save(cita);
     }
 
-    private Cita agendar(Nino nino, Terapeuta terapeuta, Especialidad especialidad,
-                         LocalDateTime fechaHora, Cita citaAExcluir) {
+    /** Valida que el terapeuta no tenga otra cita activa que se solape con el horario propuesto. */
+    private void validarDisponibilidad(Nino nino, Terapeuta terapeuta, Especialidad especialidad,
+                                       LocalDateTime fechaHora, Cita citaAExcluir) {
         LocalDateTime finPropuesto = fechaHora.plusMinutes(especialidad.getDuracionMinutos());
 
         List<Cita> citasEnRango = citaRepository.findByTerapeutaAndFechaHoraBetweenAndEstadoNot(
@@ -58,14 +67,6 @@ public class CitaService {
             throw new HorarioNoDisponibleException(
                     "El terapeuta ya tiene una cita programada que se solapa con este horario.");
         }
-
-        Cita cita = new Cita();
-        cita.setNino(nino);
-        cita.setTerapeuta(terapeuta);
-        cita.setEspecialidad(especialidad);
-        cita.setFechaHora(fechaHora);
-        cita.setEstado(Cita.Estado.PENDIENTE);
-        return citaRepository.save(cita);
     }
 
     public Cita confirmar(Cita cita) {
@@ -78,12 +79,13 @@ public class CitaService {
         return citaRepository.save(cita);
     }
 
-    /** Reprograma revalidando disponibilidad en el nuevo horario (excluyendo la propia cita). */
+    /** Reprograma la misma cita (mismo id) revalidando disponibilidad en el nuevo horario. */
     public Cita reprogramar(Cita cita, LocalDateTime nuevaFechaHora) {
-        Cita temporal = agendar(cita.getNino(), cita.getTerapeuta(), cita.getEspecialidad(),
+        validarDisponibilidad(cita.getNino(), cita.getTerapeuta(), cita.getEspecialidad(),
                 nuevaFechaHora, cita);
-        cancelar(cita);
-        return temporal;
+        cita.setFechaHora(nuevaFechaHora);
+        cita.setEstado(Cita.Estado.PENDIENTE);
+        return citaRepository.save(cita);
     }
 
     private boolean seSuperponen(LocalDateTime inicioA, LocalDateTime finA, LocalDateTime inicioB, LocalDateTime finB) {

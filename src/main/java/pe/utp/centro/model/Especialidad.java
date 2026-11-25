@@ -21,4 +21,7 @@ public class Especialidad {
 
     @Column(nullable = false)
     private Integer duracionMinutos;
+
+    @Column(nullable = false, precision = 8, scale = 2)
+    private java.math.BigDecimal precio;
 }

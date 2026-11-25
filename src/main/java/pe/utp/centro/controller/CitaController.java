@@ -21,6 +21,7 @@ import pe.utp.centro.repository.TerapeutaRepository;
 import pe.utp.centro.service.CitaService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Modulo de agendamiento (RF-03/RF-04). El listado y las acciones se filtran
@@ -72,7 +73,7 @@ public class CitaController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('APODERADO') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('APODERADO') or hasRole('ADMIN') or hasRole('RECEPCIONISTA')")
     public ResponseEntity<?> agendar(@Valid @RequestBody CitaRequest req,
                                      @AuthenticationPrincipal Usuario usuario) {
         Nino nino = ninoRepository.findById(req.ninoId())
@@ -109,6 +110,22 @@ public class CitaController {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cita no encontrada"));
         return CitaResponse.from(citaService.cancelar(cita));
+    }
+
+    /** Horarios ocupados del terapeuta en una fecha (para deshabilitar las horas en la vista de agendar). */
+    @GetMapping("/ocupados")
+    @PreAuthorize("isAuthenticated()")
+    public List<Map<String, Object>> horariosOcupados(@RequestParam Long terapeutaId,
+                                                      @RequestParam java.time.LocalDate fecha) {
+        return citaRepository.findAll().stream()
+                .filter(c -> c.getTerapeuta().getId().equals(terapeutaId))
+                .filter(c -> c.getEstado() != Cita.Estado.CANCELADA)
+                .filter(c -> c.getFechaHora().toLocalDate().equals(fecha))
+                .map(c -> Map.<String, Object>of(
+                        "fechaHora", c.getFechaHora().toString(),
+                        "duracionMinutos", c.getEspecialidad().getDuracionMinutos() != null
+                                ? c.getEspecialidad().getDuracionMinutos() : 60))
+                .toList();
     }
 
     private void validarAcceso(Cita cita, Usuario usuario) {

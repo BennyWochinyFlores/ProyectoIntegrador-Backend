@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "usuario")
 @Getter
@@ -23,6 +25,14 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
+    @Column(length = 20)
+    private String dni;
+
+    private LocalDate fechaNacimiento;
+
+    @Column(length = 1)
+    private String genero;
+
     @Column(nullable = false)
     @JsonIgnore
     private String password;
@@ -33,5 +43,9 @@ public class Usuario {
 
     public enum Rol {
         ADMIN, RECEPCIONISTA, TERAPEUTA, APODERADO
+    }
+
+    public String getNombreCompleto() {
+        return nombre;
     }
 }

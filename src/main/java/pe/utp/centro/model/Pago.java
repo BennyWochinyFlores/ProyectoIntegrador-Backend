@@ -27,13 +27,27 @@ public class Pago {
     private BigDecimal monto;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(length = 20)
     private Metodo metodo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Estado estado = Estado.PENDIENTE;
+
+    @Column(length = 50)
+    private String numeroBoleta;
+
+    @Column(length = 50)
+    private String numeroOperacion;
 
     @Column(nullable = false)
     private LocalDateTime fecha = LocalDateTime.now();
 
     public enum Metodo {
         EFECTIVO, TARJETA, TRANSFERENCIA
+    }
+
+    public enum Estado {
+        PENDIENTE, PAGADO
     }
 }

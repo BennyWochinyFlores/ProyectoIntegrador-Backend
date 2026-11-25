@@ -1,5 +1,6 @@
 package pe.utp.centro.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,7 @@ public class Sesion {
 
     @OneToOne
     @JoinColumn(name = "cita_id", nullable = false, unique = true)
+    @JsonIgnore
     private Cita cita;
 
     @Column(length = 500)
@@ -27,7 +29,23 @@ public class Sesion {
     @Column(nullable = false, length = 30)
     private NivelAvance nivelAvance;
 
+    private Boolean asistio;
+
+    private Integer duracionMinutos;
+
+    // Diagnostico (archivo subido por el terapeuta)
+    @Column(length = 255)
+    private String nombreArchivo;
+
+    private Long tamanoArchivo;
+
+    private String fechaDiagnostico;
+
+    @Lob
+    @Column(name = "datos_archivo")
+    private byte[] datosArchivo;
+
     public enum NivelAvance {
-        INICIAL, EN_PROGRESO, LOGRADO
+        INICIAL, EN_PROGRESO, LOGRADO, AVANZADO, COMPLETADO
     }
 }

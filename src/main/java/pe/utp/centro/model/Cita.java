@@ -37,6 +37,9 @@ public class Cita {
     @Column(nullable = false, length = 20)
     private Estado estado = Estado.PENDIENTE;
 
+    @OneToOne(mappedBy = "cita")
+    private Sesion sesion;
+
     public enum Estado {
         PENDIENTE, CONFIRMADA, CANCELADA, ATENDIDA
     }

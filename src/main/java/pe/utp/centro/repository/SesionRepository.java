@@ -10,4 +10,7 @@ public interface SesionRepository extends JpaRepository<Sesion, Long> {
 
     // RF-06: reporte de progreso por nino
     List<Sesion> findByCita_Nino(Nino nino);
+
+    // Find session by cita
+    java.util.Optional<Sesion> findByCita(pe.utp.centro.model.Cita cita);
 }

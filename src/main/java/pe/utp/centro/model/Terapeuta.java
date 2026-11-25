@@ -26,4 +26,8 @@ public class Terapeuta {
 
     @Column(length = 30)
     private String colegiatura;
+
+    public String getNombre() {
+        return usuario != null ? usuario.getNombre() : null;
+    }
 }

@@ -18,6 +18,7 @@ import pe.utp.centro.model.Usuario;
 import pe.utp.centro.repository.NinoRepository;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * HU-03: listado de ninos. HU-10: el apoderado solo ve a sus hijos.
@@ -38,8 +39,13 @@ public class NinoController {
     @ResponseStatus(HttpStatus.CREATED)
     public Nino registrar(@Valid @RequestBody NinoRequest req, @AuthenticationPrincipal Usuario apoderado) {
         Nino nino = new Nino();
+        nino.setDni(req.dni().trim());
+        nino.setApellidoPaterno(req.apellidoPaterno().trim());
+        nino.setApellidoMaterno(req.apellidoMaterno().trim());
         nino.setNombres(req.nombres().trim());
         nino.setFechaNacimiento(req.fechaNacimiento());
+        nino.setGenero(req.genero().trim().toUpperCase());
+        nino.setParentesco(req.parentesco().trim().toUpperCase());
         nino.setApoderado(apoderado);
         return ninoRepository.save(nino);
     }
@@ -65,5 +71,33 @@ public class NinoController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No es hijo de este apoderado");
         }
         return nino;
+    }
+
+    @PostMapping("/vincular")
+    @PreAuthorize("hasRole('APODERADO')")
+    public Nino vincular(@RequestBody Map<String, String> body,
+                         @AuthenticationPrincipal Usuario apoderado) {
+        String dni = body.get("dni");
+        String parentesco = body.get("parentesco");
+
+        Nino nino = ninoRepository.findByDni(dni)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Niño no encontrado"));
+
+        if (nino.getApoderado() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Este niño ya está vinculado a un apoderado. Solicita la vinculación en recepción.");
+        }
+
+        nino.setApoderado(apoderado);
+        nino.setParentesco(parentesco != null ? parentesco.toUpperCase() : "TUTOR");
+        nino.setEsPrincipal(false);
+        return ninoRepository.save(nino);
+    }
+
+    @GetMapping("/por-dni/{dni}")
+    @PreAuthorize("isAuthenticated()")
+    public Nino buscarPorDni(@PathVariable String dni) {
+        return ninoRepository.findByDni(dni)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Niño no encontrado"));
     }
 }

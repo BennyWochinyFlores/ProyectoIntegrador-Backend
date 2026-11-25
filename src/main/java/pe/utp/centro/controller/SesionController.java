@@ -39,9 +39,16 @@ public class SesionController {
 
     @PostMapping
     @PreAuthorize("hasRole('TERAPEUTA') or hasRole('ADMIN')")
-    public Sesion registrar(@Valid @RequestBody SesionRequest req) {
+    public Sesion registrar(@Valid @RequestBody SesionRequest req,
+                            @AuthenticationPrincipal Usuario usuario) {
         Cita cita = citaRepository.findById(req.citaId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cita no encontrada"));
+        if (usuario.getRol() == Usuario.Rol.TERAPEUTA
+                && (cita.getTerapeuta() == null || cita.getTerapeuta().getUsuario() == null
+                || !cita.getTerapeuta().getUsuario().getId().equals(usuario.getId()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Solo puedes registrar sesiones de tus propias citas.");
+        }
         try {
             return sesionService.registrarSesion(cita, req.observaciones(), req.nivelAvance());
         } catch (IllegalStateException ex) {
@@ -57,6 +64,14 @@ public class SesionController {
         if (usuario.getRol() == Usuario.Rol.APODERADO && !nino.getApoderado().getId().equals(usuario.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No es hijo de este apoderado");
         }
-        return sesionRepository.findByCita_Nino(nino);
+        List<Sesion> sesiones = sesionRepository.findByCita_Nino(nino);
+        if (usuario.getRol() == Usuario.Rol.TERAPEUTA) {
+            return sesiones.stream()
+                    .filter(s -> s.getCita() != null && s.getCita().getTerapeuta() != null
+                            && s.getCita().getTerapeuta().getUsuario() != null
+                            && s.getCita().getTerapeuta().getUsuario().getId().equals(usuario.getId()))
+                    .toList();
+        }
+        return sesiones;
     }
 }
